@@ -1,0 +1,21 @@
+---
+sensitive_debug: false
+debug: '{{ sensitive_debug }}'
+vpn_peers: >-
+  [ {%- for peer in vpn_self_identifier|find_peer(vpn_peering) -%}
+      {{ peer|combine({
+          'config': vars[peer.name]|default({})
+      }) }},
+    {%- endfor -%} ]
+
+unmanaged_peers: >-
+  [ {%- for peer in vpn_self_identifier|find_peer(unmanaged_peering) -%}
+      {{ peer|combine({
+          'config': vars[peer.name]|default({})
+      }) }},
+    {%- endfor -%} ]
+
+# by default the vpn_self_identifier is based on the hostname of the device if you want another form of naming,
+# please define it in the group_vars/device_roles<role_of_device>/file.yaml
+vpn_self_identifier: "{{ inventory_hostname }}_peer"
+vpn_self: "{{ vars[vpn_self_identifier] }}"

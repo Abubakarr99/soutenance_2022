@@ -1,0 +1,59 @@
+---
+# this file contains the list of wireguard peers
+# Every peer would have an endpoint, name which is the inventory_name of the peer. The virtual ip address and this list
+# networks that it routes traffic for.
+wireguard_gateway-1_peer:
+  endpoint_v4_public: X.X.X.X
+  address: 10.0.0.1/32 # tunnel ip address
+  # these are the local network that we route traffic for. It could be just the tunnel ip of the peer
+  range_v4:
+    - 192.168.1.0/24
+  wireguard_port: "51820"
+
+
+wireguard_gateway-2_peer:
+  endpoint_v4_public: X.X.X.X
+  address: 10.O.O.2/32
+  range_v4:
+    - 192.168.2.0/24
+  wireguard_port: "51820"
+
+
+wireguard_gateway-3_peer:
+  endpoint_v4_public: X.X.X.X
+  address: 10.O.O.3/32
+  range_v4:
+    - 192.168.3.0/24
+  wireguard_port: "51820"
+
+
+wireguard_gateway-4_peer:
+  endpoint_v4_public: X.X.X.X
+  address: 10.O.O.4/32
+  range_v4:
+    - 192.168.4.0/32
+  wireguard_port: "51820"
+
+vyOS_peer:
+  endpoint_v4_public: X.X.X.X
+  address: 10.O.O.5/32
+  public_key: "KtUum8h0g744AxRSXmxNfA7XskC7X49ovWvdt04E5kw="
+  range_v4:
+    - 192.168.5.0/32
+  wireguard_port: "51820"
+
+managed_peering:
+  ipsec:
+    - left: GWIPSEC01_devl_peer
+      right: GKE_devl_peer
+      key: '{{ devl_psk_key }}'
+  wireguard:
+    - left: wireguard_gateway-1_peer
+      right: wireguard_gateway-2_peer
+    - left: wireguard_gateway-3_peer
+      right: wireguard_gateway-4_peer
+
+unmanaged_peering:
+  - left: wireguard_gateway-2_peer
+    right: vyOS_peer
+

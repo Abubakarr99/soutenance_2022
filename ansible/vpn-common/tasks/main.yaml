@@ -1,0 +1,53 @@
+---
+- name: 'display vpn_self_identifier variable'
+  debug:
+    var: vpn_self_identifier
+  when: debug|bool
+
+- name: 'check required variables'
+  assert:
+    that:
+      - vpn_peering is sequence
+      - vpn_self_identifier is defined
+
+- name: 'check vpn_self_identifier content'
+  assert:
+    that:
+      - vars[vpn_self_identifier] is defined
+    fail_msg: "'{{ vpn_self_identifier }}' doesnt seems to exist. Verify vpn_self_identifier"
+
+# 'debug.msg' will raise error if got undefined (sub-)variable,
+# where 'debug.var' will skip it happily.
+- name: 'display vpn_self variable'
+  debug:
+    msg: '{{ vpn_self }}'
+  when: sensitive_debug|bool
+
+- name: 'check vpn_peer variable'
+  assert:
+    that:
+      - vpn_self.endpoint_v4_public|ipv4
+      - vpn_self.range_v4|map('ipv4')|list|length
+        == vpn_self.range_v4|length
+
+- name: 'Display vpn peers'
+  debug:
+    msg: '{{ vpn_peers }}'
+  when: sensitive_debug|bool
+
+- name: 'Check vpn_peers (item=None)'
+  assert:
+    that:
+      - vars[item.name] is defined
+      - item.config is mapping
+      - item.config.endpoint_v4_public|ipv4
+      - item.config.range_v4|map('ipv4')|list|length
+        == item.config.range_v4|length
+  with_items: '{{ vpn_peers }}'
+  no_log: true
+
+
+
+
+
+

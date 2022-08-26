@@ -1,0 +1,45 @@
+# {{ ansible_managed }}
+
+[Interface]
+# Us
+Address = {{ vpn_self.address }}
+PrivateKey = {{ wireguard_private_key }}
+ListenPort = {{ vpn_self.wireguard_port| default(wireguard_port) }}
+
+{% if vpn_self.wireguard_postup is defined %}
+# postUp commands to run after interface is up. This could be iptables rules, addition of routes etc
+{% for wg_postup in vpn_self.wireguard_postup %}
+PostUp = {{ wg_postup }}
+{% endfor %}
+{% endif %}
+{% if wireguard_save_config is defined %}
+SaveConfig = {{ wireguard_save_config }}
+{% endif %}
+
+{% for peer in vpn_peers %}
+
+[Peer]
+# Them
+# {{ peer.name }}
+PublicKey = {{ hostvars[peer.name|replace('_peer', '')].wireguard__fact_public_key }}
+AllowedIPs = {{ (peer.config.range_v4|join(',')) }}
+Endpoint = {{ peer.config.endpoint_v4_public }}:{{ peer.config.wireguard_port }}
+{% if peer.config.wireguard_persistent_keepalive is defined %}
+PersistentKeepalive = {{ peer.config.wireguard_persistent_keepalive }}
+{% endif %}
+{% endfor %}
+
+{% if unmanaged_peers | length > 0 %}
+# Peers not managed by Ansible from "unmanaged_peers" variable
+{% for peer in unmanaged_peers %}
+[Peer]
+# {{ peer.name }}
+PublicKey = {{ peer.config.public_key }}
+AllowedIPs = {{ (peer.config.range_v4|join(',')) }}
+Endpoint = {{ peer.config.endpoint_v4_public }}:{{ peer.config.wireguard_port }}
+{% if peer.config.persistent_keepalive is defined %}
+PersistentKeepalive = {{ peer.config.persistent_keepalive }}
+{%     endif %}
+{%   endfor %}
+{% endif %}
+

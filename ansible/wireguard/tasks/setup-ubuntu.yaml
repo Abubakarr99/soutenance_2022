@@ -1,0 +1,18 @@
+---
+
+- name: (Ubuntu) Update APT package cache
+  ansible.builtin.apt:
+    update_cache: "{{ wireguard_ubuntu_update_cache }}"
+  changed_when: false
+
+- name: (Ubuntu) Ensure WireGuard DKMS package is removed
+  ansible.builtin.apt:
+    name:
+      - "wireguard-dkms"
+    state: absent
+
+- name: Install wireguard package
+  apt:
+    name: "wireguard"
+    state: present
+

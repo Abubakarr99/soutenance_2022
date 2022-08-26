@@ -1,0 +1,134 @@
+---
+# tasks file for prometheus-proxy
+
+- name: Make sure monitored_device_groups is defined in netbox
+  assert:
+    that:
+      - monitored_device_groups is defined
+    fail_msg: "Add the device group to be monitored in Netbox. For more info refer to README.md"
+
+- name: Obtain list of devices from NetBox
+  set_fact:
+    query_output: "{{ query('netbox.netbox.nb_lookup', 'devices', 'virtual-machines',
+        api_filter='tag=monitored_by_proxy tag=' ~ lookup('ansible.builtin.env', 'WORKSPACE'),
+        api_endpoint=lookup('ansible.builtin.env', 'NETBOX_API'), 
+        token=lookup('ansible.builtin.env', 'NETBOX_TOKEN')) }}"
+  delegate_to: localhost
+
+- set_fact:
+    targets: "{{ targets|default([]) + [ {'socket':item.value.primary_ip4.address|ipaddr('address')+':' ~ target_port, 
+              'hostrole':item.value.device_role.slug|default(item.value.role.slug), 'hostname':item.value.name }] }}"
+  loop: "{{ query_output }}"
+  no_log: true
+  when: monitored_device_groups is defined and 
+    (item.value.role.slug is defined and item.value.role.slug in monitored_device_groups) or
+    (item.value.device_role.slug is defined and item.value.device_role.slug in monitored_device_groups)
+
+- set_fact:
+    target_groups: "{{ targets | groupby('hostrole') }}"
+
+- set_fact:
+    prometheus_dir: "{{ prometheus_archive_url.split('/')[-1] | regex_replace('.tar.gz') }}"
+
+- name: check is prometheus exist
+  stat:
+    path: "{{ prometheus_bin_dir }}/prometheus"
+  register: prometheus_state
+
+- name: Add prometheus group
+  group:
+    name: prometheus
+    state: present
+
+- name: Add prometheus user
+  user:
+    name: prometheus
+    groups: prometheus
+
+- name: Create prometheus configuration and data directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    owner: prometheus
+    group: prometheus
+  loop:
+    - '{{ prometheus_conf_dir }}'
+    - '{{ prometheus_db_dir }}'
+
+
+- name: Download the prometheus archive
+  unarchive:
+    src: "{{ prometheus_archive_url }}"
+    remote_src: yes
+    dest: /tmp/
+    creates: "/tmp/{{ prometheus_dir }}"
+  when: not prometheus_state.stat.exists
+  register: download_prometheus
+
+
+- name: Copy the prometheus binary
+  copy:
+    src: "/tmp/{{ prometheus_dir }}/{{ item }}"
+    dest: "{{ prometheus_bin_dir }}"
+    remote_src: yes
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  when: download_prometheus is changed
+  notify: restart prometheus
+  loop:
+    - prometheus
+    - promtool
+
+- name: Copy console files
+  copy:
+    src: "/tmp/{{ prometheus_dir }}/{{ item }}"
+    dest: "{{ prometheus_conf_dir }}"
+    remote_src: yes
+    owner: prometheus
+    group: prometheus
+  when: download_prometheus is changed
+  loop:
+    - consoles
+    - console_libraries
+
+
+- name: configure prometheus
+  template:
+    src: '{{ item.name }}'
+    dest: '{{ item.dest }}'
+    lstrip_blocks: "{{ item.strip|default('no') }}"
+  notify: restart prometheus
+  loop:
+    - { name: 'prometheus-service.j2', dest: '/etc/systemd/system/prometheus.service' }
+    - { name: 'prometheus-proxy.j2', dest: '{{ prometheus_conf_dir }}/prometheus.yml', strip: 'yes' }
+
+
+- name: start and enable the prometheus service
+  systemd:
+    name: prometheus
+    state: started
+    enabled: yes
+
+
+- name: Deploy firewall file
+  template:
+    src: 'firewall.j2'
+    dest: /etc/firewall
+    mode: '0700'
+  notify: 'reload firewall'
+
+- name: Configure firewall service
+  template:
+    src: firewall_service.j2
+    dest: /etc/systemd/system/firewall.service
+    mode: 0644
+  notify: 'reload firewall'
+
+- name: Start firewall_service
+  systemd:
+    name: firewall.service
+    state: started
+    enabled: yes
+

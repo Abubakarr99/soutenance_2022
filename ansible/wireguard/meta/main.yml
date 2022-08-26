@@ -1,0 +1,6 @@
+---
+dependencies:
+  - role: vpn-common
+    vars:
+      vpn_peering: "{{ managed_peering.wireguard }}"
+  

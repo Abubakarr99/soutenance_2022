@@ -1,0 +1,33 @@
+---
+- name: (CentOS 7) Tasks for standard kernel
+  block:
+    - name: (CentOS 7) Install EPEL & ELRepo repository
+      yum:
+        name:
+          - epel-release
+          - https://www.elrepo.org/elrepo-release-7.el7.elrepo.noarch.rpm
+        update_cache: true
+
+    - name: (CentOS 7) Install yum-plugin-elrepo
+      yum:
+        name: yum-plugin-elrepo
+        update_cache: true
+
+    - name: (CentOS 7) Install WireGuard packages
+      yum:
+        name:
+          - "kmod-wireguard"
+          - "wireguard-tools"
+        state: present
+      register: centos7_yum_updates
+  when:
+    - wireguard_centos7_installation_method == "standard"
+
+# wireguard in now integrated into the linux so there no need to have the dkms version.
+- name: (CentOS 7) Ensure WireGuard DKMS package is removed
+  yum:
+    name:
+      - "wireguard-dkms"
+    state: absent
+
+

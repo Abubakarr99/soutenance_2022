@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    monitored_by: proxy
+    proxy_name: {{ inventory_hostname }}
+scrape_configs:
+    - job_name: prometheus-proxy
+      honor_labels: true
+      metrics_path: /metrics
+      static_configs:
+        - targets: ["{{ prometheus_listen_address }}:{{ prometheus_port }}"]
+          labels:
+            hostname: {{ inventory_hostname }}
+            hostrole: {{ device_roles | first }}
+            namespace: monitoring-{{  lookup('ansible.builtin.env', 'WORKSPACE') }}
+    {% for group_name, group_data in target_groups %}
+    - job_name: {{ group_name }}
+      honor_labels: true
+      metrics_path: /metrics
+      static_configs:
+      {% for device in group_data %}
+       - targets: ["{{ device.socket }}"]
+         labels:
+           hostname:  {{ device.hostname }}
+           hostrole: {{ device.hostrole }}
+           namespace: monitoring-{{  lookup('ansible.builtin.env', 'WORKSPACE') }}
+       {% endfor %}
+    {% endfor %}
+
+
+

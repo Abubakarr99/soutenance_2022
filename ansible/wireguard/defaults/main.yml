@@ -1,0 +1,15 @@
+---
+# defaults file for wireguard
+wireguard_ubuntu_update_cache: "true"
+wireguard_interface: "wg0"
+wireguard_port: "51820"
+wireguard_remote_directory:  '/etc/wireguard'
+wireguard_interface_restart: false
+wireguard_service_state: "started"
+wireguard_conf_owner: 'root'
+wireguard_conf_group: 'root'
+wireguard_service_enabled: "yes"
+wireguard_conf_mode: 0600
+wireguard_centos7_installation_method: "standard"
+wireguard_centos7_reboot_timeout: "600"
+

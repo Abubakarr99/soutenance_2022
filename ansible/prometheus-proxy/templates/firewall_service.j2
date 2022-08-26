@@ -1,0 +1,13 @@
+# deployed by ansible
+# this service loads iptables rules
+[Unit]
+After=network.service
+
+[Service]
+ExecStart=/etc/firewall
+ExecStop=/etc/firewall -f
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target

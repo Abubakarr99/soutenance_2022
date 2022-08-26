@@ -1,0 +1,33 @@
+#!/bin/bash
+# ANSIBLE HANDLED FILE. DONT MODIFY IT DIRECTLY, IT WILL BE LOST
+# {{ inventory_hostname }}
+set -e
+
+comment()
+{
+    COMMENT=$(echo "$*" | sed 's/ /_/g')
+    echo "-m comment --comment $COMMENT"
+}
+flush_all_rules()
+{
+    echo "Flushing all rules"
+    iptables -F INPUT
+    iptables -F OUTPUT
+}
+
+if [ "$1" = "-f" ]; then
+    shift
+    flush_all_rules
+    exit 0
+fi
+
+
+# list of iptables rules to limit connection to the VM to only the scality cloud vpn, gcp vpc
+iptables -A INPUT -j ACCEPT -p tcp --dport 22  $(comment "SSH")
+{% for ip in proxy_whitelist_ips.vpn %}
+iptables -A INPUT -j ACCEPT -s {{ ip }} $(comment "whitelist ips from scality vpn")
+{% endfor %}
+iptables -A INPUT -j ACCEPT -s {{ proxy_whitelist_ips.vpc_network }} $(comment "vpc network of VM")
+iptables -A INPUT -j ACCEPT -m state --state RELATED,ESTABLISHED
+iptables -A INPUT -j DROP
+
