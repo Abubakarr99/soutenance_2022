@@ -37,7 +37,7 @@ wireguard_gateway-4_peer:
 vyOS_peer:
   endpoint_v4_public: X.X.X.X
   address: 10.O.O.5/32
-  public_key: "KtUum8h0g744AxRSXmxNfA7XskC7X49ovWvdt04E5kw="
+  public_key: "Public_key"
   range_v4:
     - 192.168.5.0/32
   wireguard_port: "51820"

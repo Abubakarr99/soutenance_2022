@@ -35,7 +35,7 @@ Validation
 * Navigate to the [prometheusUrl](http://x.x.x.x:9090) of the prometheus proxy and see the list of targets. This can only be accessed through the 
 Scality VPN. The list of targets should be visible under __Status > Targets__ 
 
-* Under [PrometheusPrincipal](https://mon.scality.net/prometheus/targets), the prometheus should be visible under the 
+* Under [PrometheusPrincipal](https://x.x.x.x/prometheus/targets), the prometheus should be visible under the 
 endpoint __prometheus-proxy-exporter__. 
-* Query the [PrometheusPrincipal](https://mon-devl.scality.net/prometheus/graph) for the targets monitored by
+* Query the [PrometheusPrincipal](https://x.x.x.x/prometheus/graph) for the targets monitored by
 the prometheus proxy. Ex up{monitored_by="proxy"}
